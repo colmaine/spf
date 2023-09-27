@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5;
+            margin: 10;
+            padding: 10;
+        }
+        .container {
+            margin: 10px auto;
+            max-width: 600px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+        }
+        h1 {
+            color: #007BFF;
+        }
+        textarea {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 10px;
+            height: 150px;
+            resize: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+		img {
+            width: 200px; /* Adjust the width as needed */
+            margin: 40px 0; /* Add some margin to the top */
+        }
+        #results {
+            font-weight: bold;
+            color: #007BFF;
+        }
+		
+    </style>
+</head>
+<body>
+    
+    <div class="container">
+	<img src="https://www.zupimages.net/up/23/39/bnrg.png" alt="Your Image"> 
+        <h1>SPF Record Generator </h1>
+        <textarea id="textbox1" placeholder="Enter multiple domains (one per line)"></textarea>
+        <textarea id="textbox2" placeholder="Enter multiple IP addresses (one per line, numeric only)"></textarea>
+        <textarea id="textbox3" placeholder="Enter multiple different domains (one per line)"></textarea>
+        <br>
+        <button id="generateButton">Generate SPF Records BY  </button>
+        <button id="copyButton">Copy All Records</button><br><br>
+        <div id="results"></div>
+    </div>
+    <script>
+	 // Disable Ctrl + U
+        document.addEventListener('keydown', function(event) {
+          if (event.ctrlKey && (event.key === 'u' || event.keyCode === 85)) {
+              event.preventDefault();
+          }
+        });
+        
+        // Disable Ctrl + Shift + I
+        document.addEventListener('keydown', function(event) {
+          if (event.ctrlKey && event.shiftKey && (event.key === 'i' || event.keyCode === 73)) {
+            event.preventDefault();
+          }
+        });
+        
+        // Disable right-click
+        document.addEventListener('contextmenu', function(event) {
+          event.preventDefault();
+        });
+
+        // Function to validate domain input
+        function isValidDomain(domain) {
+            // Regular expression to validate domain format
+            var domainRegex = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return domainRegex.test(domain);
+        }
+
+        // Function to validate numeric input
+        document.getElementById("textbox2").addEventListener("input", function() {
+            var input = this.value;
+            // Remove non-numeric characters
+            var numericInput = input.replace(/[^0-9.\n]/g, '');
+            this.value = numericInput;
+        });
+
+        // Function to validate domain input for textbox3
+        document.getElementById("textbox3").addEventListener("input", function() {
+            var input = this.value;
+            // Split the input into lines
+            var lines = input.split("\n");
+            // Remove lines that are not valid domains
+            var validDomains = lines.filter(function(domain) {
+                return isValidDomain(domain.trim());
+            });
+            // Set the value of textbox3 to the filtered list of valid domains
+            this.value = validDomains.join("\n");
+        });
+
+        // Function to copy SPF records to clipboard
+     function copyRecordsToClipboard() {
+      var recordsContainer = document.getElementById("results");
+      var records = recordsContainer.getElementsByTagName("p");
+
+      if (records.length === 0) {
+        alert("No SPF records to copy.");
+        return;
+      }
+
+      var clipboardText = '';
+
+      for (var i = 0; i < records.length; i++) {
+        clipboardText += records[i].textContent + '\n\n'; // Add two newline characters to create a blank line
+      }
+
+    var textarea = document.createElement("textarea");
+    textarea.value = clipboardText;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+     alert("SPF records copied to clipboard!");
+    }
+
+
+        // Add an event listener to the copy button
+        document.getElementById("copyButton").addEventListener("click", copyRecordsToClipboard);
+
+        document.getElementById("generateButton").addEventListener("click", function() {
+            var domains = document.getElementById("textbox1").value.split("\n").filter(function(domain) {
+                return isValidDomain(domain.trim());
+            });
+            var ips = document.getElementById("textbox2").value.split("\n").filter(Boolean);
+            var differentDomains = document.getElementById("textbox3").value.split("\n").filter(Boolean);
+
+            var resultsContainer = document.getElementById("results");
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            // Check if textbox1 is empty
+            if (domains.length === 0) {
+                resultsContainer.innerHTML = "Error: Please enter at least one domain in the first field.";
+                return; // Stop further execution
+            }
+
+            // Generate SPF record for each domain
+            domains.forEach(function(domain) {
+                var result = "";
+                // Add IPs to the SPF record
+                if (ips.length > 0) {
+                    result += "ip4:" + ips.join(" ip4:") + " ";
+                }
+
+                // Add different domains to the SPF record
+                for (var i = 0; i < differentDomains.length; i++) {
+                    var diffDomain = differentDomains[i].trim();
+                    if (diffDomain) {
+                        result += "include:" + diffDomain + " ";
+                    }
+                }
+
+                // Construct the final SPF record
+                result = result.trim(); // Remove trailing space
+                result = result.length > 0 ? domain +","+domain +",TXT,\"v=spf1 " + result + " -all\"" : ""; // Check if any values exist
+
+                // Display the SPF record for this domain
+                var resultElement = document.createElement("p");
+                resultElement.textContent = result;
+                resultsContainer.appendChild(resultElement);
+            });
+        });
+    </script>
+</body>
+</html>
